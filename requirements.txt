@@ -1,0 +1,7 @@
+git+https://github.com/facebookresearch/segment-anything.git
+torch
+numpy
+torchvision
+opencv-python
+pre-commit
+black
