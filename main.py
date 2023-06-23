@@ -30,6 +30,12 @@ def parse_args() -> argparse:
         help="checkpoint: more info models_checkpoint/download_link_for_chec_kpoint.txt",
     )
 
+    # kwargs for SamAutomaticMaskGenerator
+    parser.add_argument("--kwargs_auto", "-ka", type=json.loads, default=None, help="dict kwargs")
+
+    # prompts for SamPredictor
+    parser.add_argument("--prompts", "-pr", type=json.loads, default=None, help="dict prompts")
+
     # select generate masks or predict with prompts
     parser.add_argument(
         "--generate_mask",
@@ -135,8 +141,7 @@ if __name__ == "__main__":
     sam.to("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.generate_mask:  # generate masks (default)
-        # todo: get kwags from args
-        sam = _set_up_SAM_mask_generator(sam=sam)
+        sam = _set_up_SAM_mask_generator(sam=sam, kwargs=args.kwargs_auto if args.kwargs_auto else None)
     else:  # predict masks
         sam = _set_up_SAM_predict_with_prompt(sam=sam)
 
