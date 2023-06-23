@@ -5,3 +5,4 @@ torchvision
 opencv-python
 pre-commit
 black
+matplotlib
