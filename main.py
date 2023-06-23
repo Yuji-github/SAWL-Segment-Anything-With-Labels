@@ -138,6 +138,7 @@ if __name__ == "__main__":
     else:  # predict masks
         sam = _set_up_SAM_predict_with_prompt(sam=sam)
 
+    # generating COCO formats annotation data with given target
     for image in imported_images:  # args.target_list (list)
         if args.generate_mask:  # generating masks takes time
             masks = sam.generate(image)
