@@ -8,6 +8,8 @@ from typing import List
 import argparse
 import os
 
+from image_seg_mask2transformer import predict_seg_img
+
 
 def parse_args() -> argparse:
     parser = argparse.ArgumentParser()
@@ -142,7 +144,7 @@ if __name__ == "__main__":
     for image in imported_images:  # args.target_list (list)
         if args.generate_mask:  # generating masks takes time
             masks = sam.generate(image)
-        else:  # predicting masks with given prompts (e.g XY coordinates)
+        else:  # predicting masks with given prompts (e.g, XY coordinates)
             pass
             # masks = masks, _, _ = sam.predict(prompt)
 
