@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from typing import List
 import argparse
 import os
+from tqdm import tqdm
 
 from image_seg_mask2transformer import predict_seg_img
 
@@ -61,7 +62,7 @@ def _import_images(images: list) -> List[np.array]:
         return []
 
     imported_images = []
-    for image in images:
+    for image in tqdm(images):
         imported_images.append(cv2.cvtColor(cv2.imread(image), cv2.COLOR_BGR2RGB))
     return imported_images
 
@@ -144,18 +145,23 @@ def _show_anns(anns):
 if __name__ == "__main__":
     args = parse_args()
 
+    # Reading images
     images = [args.image_folder_path + "/" + file for file in os.listdir(args.image_folder_path)]
+    print(f"#### Reading Images at {args.image_folder_path}")
     imported_images = _import_images(images)
 
     # SAM registry
     # model_type: recommend vit_h (2.4 GB) to get more segmentation masks
     # checkpoint: this model must match with the model_types
     # if GPU available, put SAM on GPU otherwise CPU (CPU takes time)
+    print(f"#### Reading Check Point Model at {args.checkpoint}")
     sam = sam_model_registry[args.model_type](checkpoint=args.checkpoint)
     sam.to("cuda" if torch.cuda.is_available() else "cpu")
 
+    # Building model
+    print("#### Building Model")
     if args.generate_mask:  # generate masks (default)
-        kwargs = {}
+        params = {}
         if args.kwargs_auto:
             with open(args.kwargs_auto, "r") as f:
                 params = json.loads(f.read())
