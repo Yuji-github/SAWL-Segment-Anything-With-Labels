@@ -1,0 +1,8 @@
+{
+"point_coords": null,
+"point_labels": null,
+"box": null,
+"mask_input": null,
+"multimask_output": true,
+"return_logits": false
+}

@@ -31,10 +31,10 @@ def parse_args() -> argparse:
     )
 
     # kwargs for SamAutomaticMaskGenerator
-    parser.add_argument("--kwargs_auto", "-ka", type=json.loads, default=None, help="dict kwargs")
+    parser.add_argument("--kwargs_auto", "-ka", type=str, default=None, help="dict kwargs: json format required")
 
     # prompts for SamPredictor
-    parser.add_argument("--prompts", "-pr", type=json.loads, default=None, help="dict prompts")
+    parser.add_argument("--prompts", "-pr", type=str, default=None, help="dict prompts: json format required")
 
     # select generate masks or predict with prompts
     parser.add_argument(
@@ -44,13 +44,12 @@ def parse_args() -> argparse:
         choices=[True, False],
         default=True,
         help="generating segmentation masks with SAM",
-        required=True,
     )
 
     return parser.parse_args()
 
 
-def _import_images(images: list) -> List[cv2]:
+def _import_images(images: list) -> List[np.array]:
     """Importing images to cv2, convert the images to RGB
     SAM requires HWC uint8 format
 
@@ -67,13 +66,13 @@ def _import_images(images: list) -> List[cv2]:
     return imported_images
 
 
-def _set_up_SAM_mask_generator(sam: sam_model_registry = None, **kwargs) -> SamAutomaticMaskGenerator:
+def _set_up_SAM_mask_generator(sam: sam_model_registry = None, params: dict = {}) -> SamAutomaticMaskGenerator:
     """Setting SAM mask generator
     Assume users do not give input prompts such as point is in (X,Y) in pixels
 
     :param sam:
         SAM model
-    :param kwargs:
+    :param params:
         points_per_side: Optional[int] = 32,
         points_per_batch: int = 64,
         pred_iou_thresh: float = 0.88,
@@ -89,7 +88,22 @@ def _set_up_SAM_mask_generator(sam: sam_model_registry = None, **kwargs) -> SamA
         output_mode
     :return SamAutomaticMaskGenerator:
     """
-    return SamAutomaticMaskGenerator(model=sam, **kwargs)
+    return SamAutomaticMaskGenerator(
+        model=sam,
+        points_per_side=params["points_per_side"] if "points_per_side" in params else 32,
+        points_per_batch=params["points_per_batch"] if "points_per_batch" in params else 64,
+        pred_iou_thresh=params["pred_iou_thresh"] if "pred_iou_thresh" in params else 0.88,
+        stability_score_thresh=params["stability_score_thresh"] if "stability_score_thresh" in params else 0.95,
+        stability_score_offset=params["stability_score_offset"] if "stability_score_offset" in params else 1.0,
+        box_nms_thresh=params["box_nms_thresh"] if "box_nms_thresh" in params else 0.7,
+        crop_n_layers=params["crop_n_layers"] if "crop_n_layers" in params else 0,
+        crop_nms_thresh=params["crop_nms_thresh"] if "crop_nms_thresh" in params else 0.7,
+        crop_n_points_downscale_factor=params["crop_n_points_downscale_factor"]
+        if "crop_n_points_downscale_factor" in params
+        else 1,
+        point_grids=params["point_grids"] if "crop_n_layers" in params else None,
+        min_mask_region_area=params["min_mask_region_area"] if "min_mask_region_area" in params else 0,
+    )
 
 
 def _set_up_SAM_predict_with_prompt(sam: sam_model_registry = None) -> SamPredictor:
@@ -130,7 +144,7 @@ def _show_anns(anns):
 if __name__ == "__main__":
     args = parse_args()
 
-    images = dir_list = os.listdir(args.image_folder_path)
+    images = [args.image_folder_path + "/" + file for file in os.listdir(args.image_folder_path)]
     imported_images = _import_images(images)
 
     # SAM registry
@@ -141,17 +155,21 @@ if __name__ == "__main__":
     sam.to("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.generate_mask:  # generate masks (default)
-        sam = _set_up_SAM_mask_generator(sam=sam, kwargs=args.kwargs_auto if args.kwargs_auto else None)
+        kwargs = {}
+        if args.kwargs_auto:
+            with open(args.kwargs_auto, "r") as f:
+                params = json.loads(f.read())
+        sam = _set_up_SAM_mask_generator(sam=sam, params=params)
     else:  # predict masks
         sam = _set_up_SAM_predict_with_prompt(sam=sam)
 
     # generating COCO formats annotation data with given target
-    for image in imported_images:  # args.target_list (list)
-        if args.generate_mask:  # generating masks takes time
-            masks = sam.generate(image)
-        else:  # predicting masks with given prompts (e.g, XY coordinates)
-            pass
-            # masks = masks, _, _ = sam.predict(prompt)
+    # for image in imported_images:  # args.target_list (list)
+    #     if args.generate_mask:  # generating masks takes time
+    #         masks = sam.generate(image)
+    #     else:  # predicting masks with given prompts (e.g, XY coordinates)
+    #         pass
+    #         # masks = masks, _, _ = sam.predict(prompt)
 
     # plt.figure(figsize=(20, 20))
     # plt.imshow(image)
