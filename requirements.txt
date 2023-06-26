@@ -8,3 +8,6 @@ black
 transformers
 matplotlib
 tqdm
+img2vec-pytorch
+hdbscan
+scikit-learn
