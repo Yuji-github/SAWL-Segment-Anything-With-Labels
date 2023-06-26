@@ -1,3 +1,11 @@
+# Motivation
+Labeling object names and mapping the object is time-consuming. Usually, we use OpenCV2, open resources, third-company products, or hiring people for labeling.
+This project aims to auto labeling for given images with names users specifies.
+
+<p align="center">
+  <img src="readme_images/sample.png" alt="pre-commit" width="600" height="200">
+</p>
+
 # Mask2Transformer vs SAM
 
 The below figures show the difference between Mask2Transformer and SAM.
