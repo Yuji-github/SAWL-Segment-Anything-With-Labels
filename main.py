@@ -10,7 +10,7 @@ import os
 from tqdm import tqdm
 
 from image_seg_mask2former import predict_seg_img
-
+from cluster_images import ClusterImages
 
 def parse_args() -> argparse:
     parser = argparse.ArgumentParser()
