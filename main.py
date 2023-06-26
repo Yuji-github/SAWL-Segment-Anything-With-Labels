@@ -9,7 +9,7 @@ import argparse
 import os
 from tqdm import tqdm
 
-from image_seg_mask2transformer import predict_seg_img
+from image_seg_mask2former import predict_seg_img
 
 
 def parse_args() -> argparse:
