@@ -23,7 +23,11 @@ def predict_seg_img(image) -> Tuple[str, float]:
     result = processor.post_process_instance_segmentation(outputs, target_sizes=[image.size[::-1]])[0]
 
     # converting id to word
-    seg_info = result["segments_info"][0]
-    segment_label_id = seg_info["label_id"]
+    if len(result["segments_info"]) > 0:
+        seg_info = result["segments_info"][0]
+        segment_label_id = seg_info["label_id"]
 
-    return model.config.id2label[segment_label_id], seg_info["score"]
+        return model.config.id2label[segment_label_id], seg_info["score"]
+
+    else:  # have not seen
+        return "", 0.0
