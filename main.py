@@ -12,6 +12,7 @@ from display import output_images
 from image_seg_mask2former import predict_seg_img
 from cluster_images import ClusterImages
 
+
 def parse_args() -> argparse:
     parser = argparse.ArgumentParser()
 
@@ -46,6 +47,10 @@ def parse_args() -> argparse:
         default=True,
         help="generating segmentation masks with SAM",
     )
+
+    # Cluster
+    parser.add_argument("--model", "-mo", type=str, default="resnet-18", help="model for extracting features")
+    parser.add_argument("--cluster", "-cl", type=str, default="hdbscan", help="cluster methods: dbscan or hdbscan")
 
     return parser.parse_args()
 
@@ -163,5 +168,9 @@ if __name__ == "__main__":
 
     image = imported_images[0]
     masks = sam.generate(image)
-    output_images(image, masks)
+    sorted_area_masks = sorted(masks, key=(lambda x: x["area"]), reverse=True)
+    cluster = ClusterImages(image=image, masks=sorted_area_masks, model=args.model, cluster=args.cluster)
+    labels = cluster.create_image_cluster()
+    print(labels)
 
+    # output_images(image, masks)
