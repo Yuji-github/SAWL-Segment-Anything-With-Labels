@@ -2,18 +2,19 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import List, Any
 
-def output_images(image:list, masks:dict):
+
+def output_images(image: list, masks: List[dict[str, Any]]):
     """Display images
-
     :param image:
         imported_images -> List[np.array]
     :param masks:
     :return:
     """
-    def _mapping_masks(masks: dict):
-        """Mapping colors with masks for each object
 
+    def _mapping_masks(masks: List[dict[str, Any]]):
+        """Mapping colors with masks for each object
         :param masks:
         :return:
         """

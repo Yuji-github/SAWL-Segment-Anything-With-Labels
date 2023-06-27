@@ -1,26 +1,33 @@
 from transformers import AutoImageProcessor, Mask2FormerForUniversalSegmentation
 import torch
+from typing import Tuple
+
+# downloading model from HuggingFace
+processor = AutoImageProcessor.from_pretrained("facebook/mask2former-swin-large-coco-instance")
+model = Mask2FormerForUniversalSegmentation.from_pretrained("facebook/mask2former-swin-large-coco-instance")
 
 
-def predict_seg_img(image) -> str:
-    processor = AutoImageProcessor.from_pretrained("facebook/mask2former-swin-large-coco-instance")
-    model = Mask2FormerForUniversalSegmentation.from_pretrained("facebook/mask2former-swin-large-coco-instance")
-
-    # url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-    # image = Image.open(requests.get(url, stream=True).raw)
+def predict_seg_img(image) -> Tuple[str, float]:
+    """Predicting masked images with Mask2Former (800 MB)
+    :param image:
+    :return predict_name, score:
+    """
+    # carrying the image to torch
     inputs = processor(images=image, return_tensors="pt")
 
+    # giving the image to the model: return tensor values
     with torch.no_grad():
         outputs = model(**inputs)
 
-    # model predicts class_queries_logits of shape `(batch_size, num_queries)`
-    # and masks_queries_logits of shape `(batch_size, num_queries, height, width)`
-    class_queries_logits = outputs.class_queries_logits
-    masks_queries_logits = outputs.masks_queries_logits
-
-    # you can pass them to processor for postprocessing
+    # predicting image with id values (int)
     result = processor.post_process_instance_segmentation(outputs, target_sizes=[image.size[::-1]])[0]
-    # we refer to the demo notebooks for visualization (see "Resources" section in the Mask2Former docs)
-    predicted_instance_map = result["segmentation"]
 
-    return predicted_instance_map
+    # converting id to word
+    if len(result["segments_info"]) > 0:
+        seg_info = result["segments_info"][0]
+        segment_label_id = seg_info["label_id"]
+
+        return model.config.id2label[segment_label_id], seg_info["score"]
+
+    else:  # have not seen
+        return "", 0.0

@@ -7,19 +7,32 @@ from typing import List
 import argparse
 import os
 from tqdm import tqdm
-from display import output_images
+from PIL import Image
 
+from display import output_images
 from image_seg_mask2former import predict_seg_img
 from cluster_images import ClusterImages
+
 
 def parse_args() -> argparse:
     parser = argparse.ArgumentParser()
 
     # import images and target segmentation names
     parser.add_argument(
-        "--image_folder_path", "-if", type=str, default="images", help="folder path for images", required=True
+        "--image_folder_path",
+        "-if",
+        type=str,
+        default="images",
+        help="folder path for images",
+        required=True,
     )
-    parser.add_argument("--target_list", "-tl", nargs="+", help="target list for segmentation", required=True)
+    parser.add_argument(
+        "--target_list",
+        "-tl",
+        nargs="+",
+        help="target list for segmentation",
+        required=True,
+    )
 
     # setting SAM
     parser.add_argument("--model_type", "-mt", type=str, default="vit_h", help="model typs for SAM")
@@ -32,10 +45,22 @@ def parse_args() -> argparse:
     )
 
     # kwargs for SamAutomaticMaskGenerator
-    parser.add_argument("--kwargs_auto", "-ka", type=str, default=None, help="dict kwargs: json format required")
+    parser.add_argument(
+        "--kwargs_auto",
+        "-ka",
+        type=str,
+        default=None,
+        help="dict kwargs: json format required",
+    )
 
     # prompts for SamPredictor
-    parser.add_argument("--prompts", "-pr", type=str, default=None, help="dict prompts: json format required")
+    parser.add_argument(
+        "--prompts",
+        "-pr",
+        type=str,
+        default=None,
+        help="dict prompts: json format required",
+    )
 
     # select generate masks or predict with prompts
     parser.add_argument(
@@ -45,6 +70,22 @@ def parse_args() -> argparse:
         choices=[True, False],
         default=True,
         help="generating segmentation masks with SAM",
+    )
+
+    # Cluster
+    parser.add_argument(
+        "--model",
+        "-mo",
+        type=str,
+        default="resnet-18",
+        help="model for extracting features",
+    )
+    parser.add_argument(
+        "--cluster",
+        "-cl",
+        type=str,
+        default="hdbscan",
+        help="cluster methods: dbscan or hdbscan",
     )
 
     return parser.parse_args()
@@ -126,6 +167,16 @@ def _set_up_SAM_predict_with_prompt(sam: sam_model_registry = None) -> SamPredic
     return SamPredictor(sam)
 
 
+def select_index_from_cluster(cluster_number: int, labels: np.array) -> int:
+    """Selecting a sample from each cluster labeling randomly and return index
+    :param cluster_number:
+    :param lables:
+    :return int: index
+    """
+    group = np.where(labels == cluster_number)[0]
+    return np.random.choice(group.shape[0], 1, replace=False)[0]
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -154,14 +205,32 @@ if __name__ == "__main__":
         sam = _set_up_SAM_predict_with_prompt(sam=sam)
 
     # generating COCO formats annotation data with given target
-    # for image in imported_images:  # args.target_list (list)
-    #     if args.generate_mask:  # generating masks takes time
-    #         masks = sam.generate(image)
-    #     else:  # predicting masks with given prompts (e.g, XY coordinates)
-    #         pass
-    #         # masks = masks, _, _ = sam.predict(prompt)
+    print("#### Generating COCO Format")
+    for image in tqdm(imported_images):  # args.target_list (list)
+        masks = [{}]
+        if args.generate_mask:  # generating masks takes time
+            masks = sam.generate(image)
+        else:  # predicting masks with given prompts (e.g, XY coordinates)
+            masks, _, _ = sam.predict(
+                args.prompts,
+                point_coords=args.prompts["point_coords"] if "point_coords" in args.prompts else None,
+                point_labels=args.prompts["point_labels"] if "point_labels" in args.prompts else None,
+                box=args.prompts["box"] if "box" in args.prompts else None,
+                mask_input=args.prompts["mask_input"] if "mask_input" in args.prompts else None,
+                multimask_output=args.prompts["multimask_output"] if "multimask_output" in args.prompts else True,
+                return_logits=args.prompts["return_logits"] if "return_logits" in args.prompts else False,
+            )
 
-    image = imported_images[0]
-    masks = sam.generate(image)
-    output_images(image, masks)
+        # Clustering
+        sorted_area_masks = sorted(masks, key=(lambda x: x["area"]), reverse=True)
+        cluster = ClusterImages(image=image, masks=sorted_area_masks, model=args.model, cluster=args.cluster)
+        labels = cluster.create_image_cluster()
+        if len(np.unique(labels)) == 1:  # if all features are unique
+            labels = np.arange(len(labels))
 
+        # Predicting sample objects from clustering
+        for cluster_number in np.unique(labels):
+            index = select_index_from_cluster(cluster_number, labels)
+            pred_name, score = predict_seg_img(Image.fromarray(cluster.seg_images[index]))
+
+    # output_images(image, masks)
