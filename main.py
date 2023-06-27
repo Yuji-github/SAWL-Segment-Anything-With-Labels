@@ -161,5 +161,7 @@ if __name__ == "__main__":
     #         pass
     #         # masks = masks, _, _ = sam.predict(prompt)
 
-    output_images(imported_images, sam)
+    image = imported_images[0]
+    masks = sam.generate(image)
+    output_images(image, masks)
 
