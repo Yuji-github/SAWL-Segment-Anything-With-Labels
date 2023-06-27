@@ -58,7 +58,7 @@ class ClusterImages:
         :return: ndarray, shape (n_samples, )
             cluster labels
         """
-        clustering: np.array = np.array()
+        clustering: np.array = np.array([])
 
         if self.cluster == "dbscan":
             clustering = DBSCAN(eps=0.5, n_jobs=-1).fit_predict(self.stored_features)

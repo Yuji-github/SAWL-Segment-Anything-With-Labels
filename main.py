@@ -7,8 +7,9 @@ from typing import List
 import argparse
 import os
 from tqdm import tqdm
-from display import output_images
+from PIL import Image
 
+from display import output_images
 from image_seg_mask2former import predict_seg_img
 from cluster_images import ClusterImages
 
@@ -171,6 +172,11 @@ if __name__ == "__main__":
     sorted_area_masks = sorted(masks, key=(lambda x: x["area"]), reverse=True)
     cluster = ClusterImages(image=image, masks=sorted_area_masks, model=args.model, cluster=args.cluster)
     labels = cluster.create_image_cluster()
-    print(labels)
+
+    if len(np.unique(labels)) == 1:  # if all features are unique
+        labels = np.arange(len(labels))
+
+    for img_np_array in cluster.seg_images:
+        pred_name, score = predict_seg_img(Image.fromarray(img_np_array))
 
     # output_images(image, masks)
