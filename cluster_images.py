@@ -61,9 +61,11 @@ class ClusterImages:
         clustering: np.array = np.array([])
 
         if self.cluster == "dbscan":
-            clustering = DBSCAN(eps=0.5, n_jobs=-1).fit_predict(self.stored_features)
+            clustering = DBSCAN(eps=5, min_samples=2, n_jobs=-1).fit_predict(self.stored_features)
         elif self.cluster == "hdbscan":
-            clustering = HDBSCAN(algorithm="best", metric="euclidean").fit_predict(self.stored_features)
+            clustering = HDBSCAN(algorithm="best", metric="euclidean", min_samples=1, min_cluster_size=2).fit_predict(
+                self.stored_features
+            )
 
         return clustering
 

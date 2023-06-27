@@ -225,8 +225,13 @@ if __name__ == "__main__":
         sorted_area_masks = sorted(masks, key=(lambda x: x["area"]), reverse=True)
         cluster = ClusterImages(image=image, masks=sorted_area_masks, model=args.model, cluster=args.cluster)
         labels = cluster.create_image_cluster()
-        if len(np.unique(labels)) == 1:  # if all features are unique
-            labels = np.arange(len(labels))
+
+        # replace unique (-1) to positive discrete int
+        num = labels.max() + 1
+        for idx in range(len(labels)):
+            if labels[idx] == -1:
+                labels[idx] = num
+                num += 1
 
         # Predicting sample objects from clustering
         for cluster_number in np.unique(labels):
