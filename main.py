@@ -167,6 +167,16 @@ def _set_up_SAM_predict_with_prompt(sam: sam_model_registry = None) -> SamPredic
     return SamPredictor(sam)
 
 
+def select_index_from_cluster(cluster_number: int, labels: np.array) -> int:
+    """Selecting a sample from each cluster labeling randomly and return index
+    :param cluster_number:
+    :param lables:
+    :return int: index
+    """
+    group = np.where(labels == cluster_number)[0]
+    return np.random.choice(group.shape[0], 1, replace=False)[0]
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -219,7 +229,8 @@ if __name__ == "__main__":
             labels = np.arange(len(labels))
 
         # Predicting sample objects from clustering
-        for img_np_array in cluster.seg_images:
-            pred_name, score = predict_seg_img(Image.fromarray(img_np_array))
+        for cluster_number in np.unique(labels):
+            index = select_index_from_cluster(cluster_number, labels)
+            pred_name, score = predict_seg_img(Image.fromarray(cluster.seg_images[index]))
 
     # output_images(image, masks)
