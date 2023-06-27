@@ -174,7 +174,7 @@ def select_index_from_cluster(cluster_number: int, labels: np.array) -> int:
     :return int: index
     """
     group = np.where(labels == cluster_number)[0]
-    return group[np.random.choice(group.shape[0])[0]]
+    return group[np.random.choice(group.shape[0])]
 
 
 if __name__ == "__main__":
