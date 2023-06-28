@@ -1,6 +1,6 @@
 from sentence_transformers import SentenceTransformer
 
-bert_model = SentenceTransformer("bert_uncased_L-2_H-128_A-2")
+# bert_model = SentenceTransformer("google/bert_uncased_L-2_H-128_A-2")
 
 def check():
     sentences = ["This is an example sentence", "Each sentence is converted"]
