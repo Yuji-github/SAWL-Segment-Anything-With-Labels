@@ -73,7 +73,7 @@ def parse_args() -> argparse:
         help="generating segmentation masks with SAM",
     )
 
-    # Cluster
+    # cluster
     parser.add_argument(
         "--model",
         "-mo",
@@ -89,7 +89,7 @@ def parse_args() -> argparse:
         help="cluster methods: dbscan or hdbscan",
     )
 
-    # Threshold
+    # threshold
 
     parser.add_argument(
         "--threshold",
@@ -99,7 +99,7 @@ def parse_args() -> argparse:
         help="threshold for labeling",
     )
 
-    # Display
+    # display
     parser.add_argument(
         "--display",
         "-dis",
@@ -108,7 +108,6 @@ def parse_args() -> argparse:
         default=False,
         help="displaying masked image: True (display), False (not display)",
     )
-
     parser.add_argument(
         "--save",
         type=eval,
