@@ -1,5 +1,5 @@
 # Motivation
-Labeling object names and mapping the object is time-consuming. Usually, we use OpenCV2, open resources, third-company products, or hiring people for labeling.
+Labeling object names and mapping the object is time-consuming. Usually, we use OpenCV2, open resources, third-company products, using deep learning, or hiring people for labeling.
 This project aims to auto labeling for given images with names users specifies.
 
 <p align="center">
