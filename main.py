@@ -88,6 +88,26 @@ def parse_args() -> argparse:
         help="cluster methods: dbscan or hdbscan",
     )
 
+    # Threshold
+
+    parser.add_argument(
+        "--threshold",
+        "-th",
+        type=float,
+        default=0.8,
+        help="threshold for labeling",
+    )
+
+    # Display
+    parser.add_argument(
+        "--display",
+        "-dis",
+        type=eval,
+        choices=[True, False],
+        default=False,
+        help="displaying masked image: True (display), False (not display)",
+    )
+
     return parser.parse_args()
 
 
@@ -238,4 +258,12 @@ if __name__ == "__main__":
             index = select_index_from_cluster(cluster_number, labels)
             pred_name, score = predict_seg_img(Image.fromarray(cluster.seg_images[index]))
 
-    # output_images(image, masks)
+            for idx in np.where(labels == cluster_number)[0]:
+                if score >= args.threshold:
+                    if pred_name in args.target_list:
+                        sorted_area_masks[idx]["id"] = pred_name
+                else:  # removing unnecessary masks
+                    sorted_area_masks.pop(idx)
+
+        if args.display:
+            output_images(image, sorted_area_masks)
