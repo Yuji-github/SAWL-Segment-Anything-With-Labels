@@ -216,7 +216,7 @@ if __name__ == "__main__":
     # SAM registry
     # model_type: recommend vit_h (2.4 GB) to get more segmentation masks
     # checkpoint: this model must match with the model_types
-    # if GPU available, put SAM on GPU otherwise CPU (CPU takes time)
+    # If GPU available, put SAM on GPU otherwise CPU (CPU takes time)
     print(f"#### Reading Check Point Model at {args.checkpoint}")
     sam = sam_model_registry[args.model_type](checkpoint=args.checkpoint)
     sam.to("cuda" if torch.cuda.is_available() else "cpu")
@@ -232,7 +232,7 @@ if __name__ == "__main__":
     else:  # predict masks
         sam = _set_up_SAM_predict_with_prompt(sam=sam)
 
-    # generating COCO formats annotation data with given target
+    # Generating COCO formats annotation data with given target
     print("#### Generating COCO Format")
     for image, file_name in tqdm(zip(imported_images, os.listdir(args.image_folder_path))):  # args.target_list (list)
         masks = [{}]
@@ -254,7 +254,7 @@ if __name__ == "__main__":
         cluster = ClusterImages(image=image, masks=sorted_area_masks, model=args.model, cluster=args.cluster)
         labels = cluster.create_image_cluster()
 
-        # replace unique (-1) to positive discrete int
+        # Replace unique (-1) to positive discrete int
         num = labels.max() + 1
         for idx in range(len(labels)):
             if labels[idx] == -1:
@@ -274,7 +274,7 @@ if __name__ == "__main__":
                 else:
                     removed_index.append(idx)
 
-        # removing unnecessary masks
+        # Removing unnecessary masks
         selected_masks = np.delete(sorted_area_masks, removed_index).tolist()
 
         if args.display:
