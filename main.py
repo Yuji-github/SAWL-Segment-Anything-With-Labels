@@ -122,7 +122,6 @@ def parse_args() -> argparse:
 def _import_images(images: list) -> List[np.array]:
     """Importing images to cv2, convert the images to RGB
     SAM requires HWC uint8 format
-
     :param images:
     :return List[cv2]:
         RGB images in the list
@@ -139,7 +138,6 @@ def _import_images(images: list) -> List[np.array]:
 def _set_up_SAM_mask_generator(sam: sam_model_registry = None, params: dict = {}) -> SamAutomaticMaskGenerator:
     """Setting SAM mask generator
     Assume users do not give input prompts such as point is in (X,Y) in pixels
-
     :param sam:
         SAM model
     :param params:
@@ -187,7 +185,6 @@ def _set_up_SAM_predict_with_prompt(sam: sam_model_registry = None) -> SamPredic
     mask_input: Optional[np.ndarray] = None,
     multimask_output: bool = True,
     return_logits: bool = False
-
     :param sam:
         SAM model
     :return SamPredictor:
@@ -198,7 +195,7 @@ def _set_up_SAM_predict_with_prompt(sam: sam_model_registry = None) -> SamPredic
 def select_index_from_cluster(cluster_number: int, labels: np.array) -> int:
     """Selecting a sample from each cluster labeling randomly and return index
     :param cluster_number:
-    :param lables:
+    :param labels:
     :return int: index
     """
     group = np.where(labels == cluster_number)[0]
@@ -240,7 +237,6 @@ if __name__ == "__main__":
             masks = sam.generate(image)
         else:  # predicting masks with given prompts (e.g, XY coordinates)
             masks, _, _ = sam.predict(
-                args.prompts,
                 point_coords=args.prompts["point_coords"] if "point_coords" in args.prompts else None,
                 point_labels=args.prompts["point_labels"] if "point_labels" in args.prompts else None,
                 box=args.prompts["box"] if "box" in args.prompts else None,
