@@ -6,6 +6,23 @@ This project aims to auto labeling for given images with names users specifies.
   <img src="readme_images/sample.png" alt="pre-commit" width="600" height="200">
 </p>
 
+# How to Install and Run
+
+Recommend: virtual env
+
+Install:
+```
+bash setup.sh
+```
+
+If you want to download smaller sizes of models, please, read at model_checkpoint/download_link_for_chec_kpoint.txt
+
+Execution:
+```
+python main.py -if images -tl dog cat --display True --save False
+```
+
+
 # Structure
 The structure shows the entire workflow.
 1. Users give an image and target.

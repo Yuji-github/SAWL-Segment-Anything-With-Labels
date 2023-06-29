@@ -12,6 +12,7 @@ from PIL import Image
 from display import output_images
 from image_seg_mask2former import predict_seg_img
 from cluster_images import ClusterImages
+from saving_masks import save_masks
 
 
 def parse_args() -> argparse:
@@ -106,6 +107,14 @@ def parse_args() -> argparse:
         choices=[True, False],
         default=False,
         help="displaying masked image: True (display), False (not display)",
+    )
+
+    parser.add_argument(
+        "--save",
+        type=eval,
+        choices=[True, False],
+        default=False,
+        help="saving masked image: True (save), False (not save)",
     )
 
     return parser.parse_args()
@@ -226,7 +235,7 @@ if __name__ == "__main__":
 
     # generating COCO formats annotation data with given target
     print("#### Generating COCO Format")
-    for image in tqdm(imported_images):  # args.target_list (list)
+    for image, file_name in tqdm(zip(imported_images, os.listdir(args.image_folder_path))):  # args.target_list (list)
         masks = [{}]
         if args.generate_mask:  # generating masks takes time
             masks = sam.generate(image)
@@ -254,6 +263,7 @@ if __name__ == "__main__":
                 num += 1
 
         # Predicting sample objects from clustering
+        removed_index = []
         for cluster_number in np.unique(labels):
             index = select_index_from_cluster(cluster_number, labels)
             pred_name, score = predict_seg_img(Image.fromarray(cluster.seg_images[index]))
@@ -262,8 +272,14 @@ if __name__ == "__main__":
                 if score >= args.threshold:
                     if pred_name in args.target_list:
                         sorted_area_masks[idx]["id"] = pred_name
-                else:  # removing unnecessary masks
-                    sorted_area_masks.pop(idx)
+                else:
+                    removed_index.append(idx)
+
+        # removing unnecessary masks
+        selected_masks = np.delete(sorted_area_masks, removed_index).tolist()
 
         if args.display:
-            output_images(image, sorted_area_masks)
+            output_images(image, selected_masks, args.save, file_name)
+
+        # Saving selected_masks in COCO Format
+        save_masks(selected_masks, file_name)

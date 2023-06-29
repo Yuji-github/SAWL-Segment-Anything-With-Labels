@@ -3,9 +3,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import List, Any
+import os
 
 
-def output_images(image: list, sorted_area_masks: List[dict[str, Any]]):
+def output_images(image: list, sorted_area_masks: List[dict[str, Any]], save: bool = False, file_name: str = None):
     """Display images
     :param image:
         imported_images -> List[np.array]
@@ -37,4 +38,10 @@ def output_images(image: list, sorted_area_masks: List[dict[str, Any]]):
     plt.imshow(image)
     _mapping_masks(sorted_area_masks)
     plt.axis("off")
-    plt.show()
+
+    if save:
+        if not os.path.exists("outputs"):
+            os.mkdir("outputs")
+        plt.savefig("outputs/masked_" + file_name)
+    else:
+        plt.show()
