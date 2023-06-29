@@ -2,9 +2,10 @@ import json
 import numpy as np
 import os
 from typing import List, Any
+import py7zr
 
 
-class BinrayMaskEncoder(json.JSONEncoder):
+class BinaryMaskEncoder(json.JSONEncoder):
     """Special json encoder for numpy types
     This is for binary segmentation info
     """
@@ -48,4 +49,11 @@ def save_masks(selected_masks: List[dict[str, Any]], file_name: str) -> None:
 
     # file_name.split('.')[0]: removing extension format
     with open("outputs_masks/" + file_name.split(".")[0] + ".json", "w") as f:
-        json.dump(selected_masks, f, cls=BinrayMaskEncoder)
+        json.dump(selected_masks, f, cls=BinaryMaskEncoder)
+
+    with py7zr.SevenZipFile("outputs_masks/" + file_name.split(".")[0] + ".7z", "w") as archive:
+        archive.writeall(
+            "outputs_masks/" + file_name.split(".")[0] + ".json", "outputs_masks/" + file_name.split(".")[0] + ".json"
+        )
+
+    os.remove("outputs_masks/" + file_name.split(".")[0] + ".json")

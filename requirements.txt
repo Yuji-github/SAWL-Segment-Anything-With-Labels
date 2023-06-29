@@ -10,4 +10,4 @@ matplotlib
 tqdm
 img2vec-pytorch
 hdbscan
-scikit-learn
+py7zr
