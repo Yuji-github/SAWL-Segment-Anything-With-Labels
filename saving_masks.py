@@ -34,7 +34,15 @@ class BinrayMaskEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def save_masks(selected_masks: List[dict[str, Any]], file_name: str):
+def save_masks(selected_masks: List[dict[str, Any]], file_name: str) -> None:
+    """Saving masks data as JSON in COCO format
+    :param selected_masks:
+    :param file_name:
+    :return None:
+    """
+    if len(selected_masks) == 0:
+        return
+
     if not os.path.exists("outputs_masks"):
         os.mkdir("outputs_masks")
 
