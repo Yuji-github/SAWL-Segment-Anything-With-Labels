@@ -12,6 +12,7 @@ from PIL import Image
 from display import output_images
 from image_seg_mask2former import predict_seg_img
 from cluster_images import ClusterImages
+from saving_masks import save_masks
 
 
 def parse_args() -> argparse:
@@ -72,7 +73,7 @@ def parse_args() -> argparse:
         help="generating segmentation masks with SAM",
     )
 
-    # Cluster
+    # cluster
     parser.add_argument(
         "--model",
         "-mo",
@@ -88,7 +89,7 @@ def parse_args() -> argparse:
         help="cluster methods: dbscan or hdbscan",
     )
 
-    # Threshold
+    # threshold
 
     parser.add_argument(
         "--threshold",
@@ -98,7 +99,7 @@ def parse_args() -> argparse:
         help="threshold for labeling",
     )
 
-    # Display
+    # display
     parser.add_argument(
         "--display",
         "-dis",
@@ -107,6 +108,13 @@ def parse_args() -> argparse:
         default=False,
         help="displaying masked image: True (display), False (not display)",
     )
+    parser.add_argument(
+        "--save",
+        type=eval,
+        choices=[True, False],
+        default=False,
+        help="saving masked image: True (save), False (not save)",
+    )
 
     return parser.parse_args()
 
@@ -114,7 +122,6 @@ def parse_args() -> argparse:
 def _import_images(images: list) -> List[np.array]:
     """Importing images to cv2, convert the images to RGB
     SAM requires HWC uint8 format
-
     :param images:
     :return List[cv2]:
         RGB images in the list
@@ -131,7 +138,6 @@ def _import_images(images: list) -> List[np.array]:
 def _set_up_SAM_mask_generator(sam: sam_model_registry = None, params: dict = {}) -> SamAutomaticMaskGenerator:
     """Setting SAM mask generator
     Assume users do not give input prompts such as point is in (X,Y) in pixels
-
     :param sam:
         SAM model
     :param params:
@@ -179,7 +185,6 @@ def _set_up_SAM_predict_with_prompt(sam: sam_model_registry = None) -> SamPredic
     mask_input: Optional[np.ndarray] = None,
     multimask_output: bool = True,
     return_logits: bool = False
-
     :param sam:
         SAM model
     :return SamPredictor:
@@ -190,7 +195,7 @@ def _set_up_SAM_predict_with_prompt(sam: sam_model_registry = None) -> SamPredic
 def select_index_from_cluster(cluster_number: int, labels: np.array) -> int:
     """Selecting a sample from each cluster labeling randomly and return index
     :param cluster_number:
-    :param lables:
+    :param labels:
     :return int: index
     """
     group = np.where(labels == cluster_number)[0]
@@ -208,7 +213,7 @@ if __name__ == "__main__":
     # SAM registry
     # model_type: recommend vit_h (2.4 GB) to get more segmentation masks
     # checkpoint: this model must match with the model_types
-    # if GPU available, put SAM on GPU otherwise CPU (CPU takes time)
+    # If GPU available, put SAM on GPU otherwise CPU (CPU takes time)
     print(f"#### Reading Check Point Model at {args.checkpoint}")
     sam = sam_model_registry[args.model_type](checkpoint=args.checkpoint)
     sam.to("cuda" if torch.cuda.is_available() else "cpu")
@@ -224,15 +229,14 @@ if __name__ == "__main__":
     else:  # predict masks
         sam = _set_up_SAM_predict_with_prompt(sam=sam)
 
-    # generating COCO formats annotation data with given target
+    # Generating COCO formats annotation data with given target
     print("#### Generating COCO Format")
-    for image in tqdm(imported_images):  # args.target_list (list)
+    for image, file_name in tqdm(zip(imported_images, os.listdir(args.image_folder_path))):  # args.target_list (list)
         masks = [{}]
         if args.generate_mask:  # generating masks takes time
             masks = sam.generate(image)
         else:  # predicting masks with given prompts (e.g, XY coordinates)
             masks, _, _ = sam.predict(
-                args.prompts,
                 point_coords=args.prompts["point_coords"] if "point_coords" in args.prompts else None,
                 point_labels=args.prompts["point_labels"] if "point_labels" in args.prompts else None,
                 box=args.prompts["box"] if "box" in args.prompts else None,
@@ -246,7 +250,7 @@ if __name__ == "__main__":
         cluster = ClusterImages(image=image, masks=sorted_area_masks, model=args.model, cluster=args.cluster)
         labels = cluster.create_image_cluster()
 
-        # replace unique (-1) to positive discrete int
+        # Replace unique (-1) to positive discrete int
         num = labels.max() + 1
         for idx in range(len(labels)):
             if labels[idx] == -1:
@@ -254,6 +258,7 @@ if __name__ == "__main__":
                 num += 1
 
         # Predicting sample objects from clustering
+        removed_index = []
         for cluster_number in np.unique(labels):
             index = select_index_from_cluster(cluster_number, labels)
             pred_name, score = predict_seg_img(Image.fromarray(cluster.seg_images[index]))
@@ -262,8 +267,14 @@ if __name__ == "__main__":
                 if score >= args.threshold:
                     if pred_name in args.target_list:
                         sorted_area_masks[idx]["id"] = pred_name
-                else:  # removing unnecessary masks
-                    sorted_area_masks.pop(idx)
+                else:
+                    removed_index.append(idx)
+
+        # Removing unnecessary masks
+        selected_masks = np.delete(sorted_area_masks, removed_index).tolist()
 
         if args.display:
-            output_images(image, sorted_area_masks)
+            output_images(image, selected_masks, args.save, file_name)
+
+        # Saving selected_masks in COCO Format
+        save_masks(selected_masks, file_name)
